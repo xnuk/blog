@@ -3,6 +3,7 @@
 	a.textContent='§'
 	a.setAttribute('href', '#'+v.id)
 	a.setAttribute('class', 'self')
+	a.setAttribute('aria-hidden', 'true')
 	v.insertBefore(a, v.firstChild)
 })
 if(!(bowser.firefox || bowser.safari && !bowser.ios)){
