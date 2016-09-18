@@ -17,7 +17,7 @@ main = do
   putStrLn $ "Hell\no, " <> rtrim <> "!"
 ```
 
-```js
+```javascript
 console.log('h\ni', /^\s+/)
 ```
 
