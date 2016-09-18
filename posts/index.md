@@ -1,4 +1,7 @@
-% Contents
+---
+title: Contents
+lang: en
+---
 
 <style type="text/css">section>header{font-size: 1.5rem;width:100%;box-sizing:border-box;margin-top:1.5rem}section{margin:.7rem;box-sizing:border-box}</style>
 

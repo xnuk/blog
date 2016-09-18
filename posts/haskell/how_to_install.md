@@ -1,4 +1,7 @@
-% How to install Haskell on your computer
+---
+title: How to install Haskell on your computer
+lang: en
+---
 
 ## Using Stack
 1. Download Stack from [here](https://docs.haskellstack.org/en/stable/README/)
