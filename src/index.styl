@@ -160,35 +160,45 @@ code
 	font-family: $monofonts
 	line-height: 125%
 
+	$green = #42770d
+	$blue = #0000cf
+	$brown = #8f5902
+	$black = #000
+	$rose = #a40000
+	$orange = #ce5c00
+	$grape = #204a87
+	$darkgold = #c4a000
+	$red = #ef2929
+
 	&>span
-		&.kw { color: #204a87; font-weight: bold; } /* Keyword */
-		&.dt { color: #204a87; } /* DataType */
-		&.dv { color: #0000cf; } /* DecVal */
-		&.bn { color: #0000cf; } /* BaseN */
-		&.fl { color: #0000cf; } /* Float */
-		&.ch { color: #4e9a06; } /* Char */
-		&.st { color: #4e9a06; } /* String */
-		&.co { color: #8f5902; font-style: italic; } /* Comment */
-		&.ot { color: #8f5902; } /* Other */
-		&.al { color: #ef2929; } /* Alert */
-		&.fu { color: #000000; } /* Function */
-		&.er { color: #a40000; font-weight: bold; } /* Error */
-		&.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
-		&.cn { color: #000000; } /* Constant */
-		&.sc { color: #000000; } /* SpecialChar */
-		&.vs { color: #4e9a06; } /* VerbatimString */
-		&.ss { color: #4e9a06; } /* SpecialString */
+		&.kw { color: $grape; font-weight: bold; } /* Keyword */
+		&.dt { color: $grape; } /* DataType */
+		&.dv { color: $blue; } /* DecVal */
+		&.bn { color: $blue; } /* BaseN */
+		&.fl { color: $blue; } /* Float */
+		&.ch { color: $green; } /* Char */
+		&.st { color: $green; } /* String */
+		&.co { color: $brown; font-style: italic; } /* Comment */
+		&.ot { color: $brown; } /* Other */
+		&.al { color: $red; } /* Alert */
+		&.fu { color: $black; } /* Function */
+		&.er { color: $rose; font-weight: bold; } /* Error */
+		&.wa { color: $brown; font-weight: bold; font-style: italic; } /* Warning */
+		&.cn { color: $black; } /* Constant */
+		&.sc { color: $black; } /* SpecialChar */
+		&.vs { color: $green; } /* VerbatimString */
+		&.ss { color: $green; } /* SpecialString */
 		&.im { } /* Import */
-		&.va { color: #000000; } /* Variable */
-		&.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
-		&.op { color: #ce5c00; font-weight: bold; } /* Operator */
-		&.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+		&.va { color: $black; } /* Variable */
+		&.cf { color: $grape; font-weight: bold; } /* ControlFlow */
+		&.op { color: $orange; font-weight: bold; } /* Operator */
+		&.pp { color: $brown; font-style: italic; } /* Preprocessor */
 		&.ex { } /* Extension */
-		&.at { color: #c4a000; } /* Attribute */
-		&.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
-		&.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
-		&.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
-		&.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+		&.at { color: $darkgold; } /* Attribute */
+		&.do { color: $brown; font-weight: bold; font-style: italic; } /* Documentation */
+		&.an { color: $brown; font-weight: bold; font-style: italic; } /* Annotation */
+		&.cv { color: $brown; font-weight: bold; font-style: italic; } /* CommentVar */
+		&.in { color: $brown; font-weight: bold; font-style: italic; } /* Information */
 
 pre
 	padding 10px
