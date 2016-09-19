@@ -9,3 +9,7 @@ lang: en
 - [Markdown support test](test/markdown.html)
 - [MathML support test](test/mathml.html)
 </section>
+
+<section><header class="tag-haskell">Haskell</header>
+- [Haskell을 설치하는 법](haskell/how_to_install.html)
+</section>
