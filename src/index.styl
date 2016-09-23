@@ -166,17 +166,17 @@ div.sourceCode
 	overflow-x: auto
 
 code
-	font-size: 16px
+	font-size: 1rem
 	font-family: $monofonts
 	line-height: 125%
 
-pre
+pre>code.hljs
+		padding: 1rem
+
+pre:not([class])
 	padding 10px
 	margin 10px 0
-	&.javascript
-		tab-size: 4
-	&.haskell
-		tab-size: 8
+	background-color: #f0f0f0
 
-pre, code
-	background-color: #fafafa
+code:not(.hljs)
+	background-color: #f0f0f0

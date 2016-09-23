@@ -3,10 +3,10 @@
 var messages={
 	// 엉엉 나도 템플릿 쓰고 십따
 	en: {
-		paragraph_anchor: function(v){'Link to paragraph: '+v}
+		paragraph_anchor: function(v){return 'Link to paragraph: '+v}
 	},
 	ko: {
-		paragraph_anchor: function(v){'단락 링크: '+v}
+		paragraph_anchor: function(v){return '단락 링크: '+v}
 	}
 }
 var lang=document.documentElement.lang
