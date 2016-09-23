@@ -5,11 +5,18 @@ machine:
 dependencies:
              override:
                           - npm install stylus -g
-                          - sudo apt-get install pandoc
+                          - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442
+                          - echo 'deb http://download.fpcomplete.com/ubuntu trusty main'|sudo tee /etc/apt/sources.list.d/fpco.list
+                          - sudo apt-get update && sudo apt-get install stack -y
+             post:
+                          - cd pandoc-custom/ && stack install
+             cache_directories:
+                          - ~/.stack
+                          - ~/.local/bin
 
 test:
              override:
-                          - perl build.pl
+                          - ~/.local/bin/pandoc-custom --template src/template.html --from ./posts/ --to ./dest/
                           - stylus src/*.styl --compress
                           - cp src/*.{js,css} dest/
 
