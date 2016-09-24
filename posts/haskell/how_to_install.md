@@ -12,12 +12,12 @@ Haskell을 설치하려고 [Haskell 공식 홈페이지의 다운로드 안내 �
 대체 GHC와 Cabal은 무엇이며, Stack은 또 뭘까요? 간단히 알려드려 보겠습니다.
 
 ## 용어
-GHC(Glasgow Haskell Compiler)는 Haskell 컴파일러입니다. 2016년 5월 21일 기준 최신 버전은 GHC 8.0.1 <cite>[GHC 다운로드 페이지](https://www.haskell.org/ghc/)</cite> 입니다. 물론 Haskell 컴파일러가 이것만 있는 것은 아니고 다른 컴파일러도 몇 있습니다만 GHC가 가장 많이 쓰이는 편입니다. GHC는 컴파일 뿐만 아니라 대화형 인터프리터 역시 지원하는데, 이를 GHCi라고 부릅니다.
+GHC(Glasgow Haskell Compiler)는 Haskell 컴파일러입니다. 2016년 5월 21일 기준 최신 버전은 GHC 8.0.1^[[GHC 다운로드 페이지](https://www.haskell.org/ghc/)에서 확인할 수 있습니다.] 입니다. 물론 Haskell 컴파일러가 이것만 있는 것은 아니고 다른 컴파일러도 몇 있습니다만 GHC가 가장 많이 쓰이는 편입니다. GHC는 컴파일 뿐만 아니라 대화형 인터프리터 역시 지원하는데, 이를 GHCi라고 부릅니다.
 
-Cabal은 패키지 매니저입니다. 물론 다른 언어의 패키지 매니저처럼 패키지 빌드 역시 Cabal로 가능합니다. 그러나 [Butterfly effect](https://cdsmith.wordpress.com/2011/01/17/the-butterfly-effect-in-cabal/)라고 불리는 의존성 문제가 있어서, 의존성 문제가 없는 패키지 리스트만을 뽑아서 배포하자고 만든 게 바로 Stack입니다. (자료 구조 할 때의 그 스택은 아닙니다. 사실 이게 널리 쓰이는 용어라 이름 가지고 얘기가 좀 있긴 했습니다. - <cite>[Please rename 'stack' to 'haystack' - /r/haskell](https://www.reddit.com/r/haskell/comments/3d3e95/please_rename_stack_to_haystack/)</cite> ) Haskell의 중앙 패키지 저장소는 Hackage라고 불리고, Stack에서 쓰이는 패키지 리스트 저장소는 Stackage라고 부릅니다. 또한 리스트를 정기 버전인 [LTS Haskell](https://www.stackage.org/lts)과 하루마다 나오는 [Stackage Nightly](https://www.stackage.org/nightly)로 나누어 배포하고 있습니다.
+Cabal은 패키지 매니저입니다. 물론 다른 언어의 패키지 매니저처럼 패키지 빌드 역시 Cabal로 가능합니다. 그러나 [Butterfly effect](https://cdsmith.wordpress.com/2011/01/17/the-butterfly-effect-in-cabal/)라고 불리는 의존성 문제가 있어서, 의존성 문제가 없는 패키지 리스트만을 뽑아서 배포하자고 만든 게 바로 Stack입니다. (자료 구조 할 때의 그 스택은 아닙니다. 사실 이게 널리 쓰이는 용어라 이름 가지고 얘기가 좀 있긴 했습니다.^[[Please rename 'stack' to 'haystack' - /r/haskell](https://www.reddit.com/r/haskell/comments/3d3e95/please_rename_stack_to_haystack/)]) Haskell의 중앙 패키지 저장소는 Hackage라고 불리고, Stack에서 쓰이는 패키지 리스트 저장소는 Stackage라고 부릅니다. 또한 리스트를 정기 버전인 [LTS Haskell](https://www.stackage.org/lts)과 하루마다 나오는 [Stackage Nightly](https://www.stackage.org/nightly)로 나누어 배포하고 있습니다.
 
 ### 그럼 Cabal은 쓸모가 없나요?
-네, 굳이 다운 받으실 필요까진 없습니다. Hackage의 많은 패키지들이 Stackage에도 등록되어 있어서, 대부분의 경우에는 Stack만으로도 패키지 설치에는 지장이 없을 정도입니다. 다만 Stack이 2015년 중순부터 나오기 시작한 패키지 매니저 <cite>[ANNOUNCING: first public beta of stack - FP complete, 2015년 6월 9일 작성](https://www.fpcomplete.com/blog/2015/06/announcing-first-public-beta-stack)</cite> 라서, 간혹 Hackage에 있지만 Stackage에는 없는 패키지이거나 소스에서 `stack.yaml`을 지원하지 않는 패키지의 경우 Stack을 쓰지 못하고 Cabal을 써야 하게 됩니다.
+네, 굳이 다운 받으실 필요까진 없습니다. Hackage의 많은 패키지들이 Stackage에도 등록되어 있어서, 대부분의 경우에는 Stack만으로도 패키지 설치에는 지장이 없을 정도입니다. 다만 Stack이 2015년 중순부터 나오기 시작한 패키지 매니저^[[ANNOUNCING: first public beta of stack - FP complete, 2015년 6월 9일 작성](https://www.fpcomplete.com/blog/2015/06/announcing-first-public-beta-stack)]라서, 간혹 Hackage에 있지만 Stackage에는 없는 패키지이거나 소스에서 `stack.yaml`을 지원하지 않는 패키지의 경우 Stack을 쓰지 못하고 Cabal을 써야 하게 됩니다.
 
 ## 설치 방법
 제 설득을 잘 들으셨다면, Cabal은 굳이 깔지 않아도 된다는 걸 아셨을 겁니다. 그럼 설치 방법은 이렇게 세 가지로 바뀌게 됩니다:

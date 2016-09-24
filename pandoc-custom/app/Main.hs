@@ -2,12 +2,10 @@ module Main (main) where
 
 import Prelude hiding (readFile, writeFile, getContents, putStrLn, putStr)
 import qualified Prelude
-import Text.Pandoc.Definition (Block(..), Pandoc(Pandoc), Format(Format), Alignment(..), TableCell)
 import Text.Pandoc.Options (ReaderOptions(..), WriterOptions(..), def, HTMLMathMethod(MathML), Extension(..))
 import Text.Pandoc.Readers.Markdown (readMarkdown)
-import Text.Pandoc.Writers.HTML (writeHtml)
+import HTML (writeHtml)
 import Text.Pandoc.Error (handleError)
-import Text.Pandoc.Walk (walk)
 import System.Environment (getArgs)
 import Data.Set (fromList, Set)
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -72,41 +70,6 @@ pathToTarget ipath opath = do
         _ -> error ("pathToTarget : " ++ undefinedCase)
   return (inp, out)
 
-n :: String -> Block
-n = RawBlock (Format "html")
-
-align :: Alignment -> String
-align AlignLeft    = " class=\"align-left\""
-align AlignRight   = " class=\"align-right\""
-align AlignCenter  = " class=\"align-center\""
-align AlignDefault = ""
-
-ezDoDance :: Block -> Block
-ezDoDance (Table captions aligns _widths headers rows) =
-  let caption = if null captions then [] else [n "<caption>", Plain captions, n "</caption>"]
-      thconvert :: [Block]
-      thconvert = (++ [n "</tr>"]) . (n "<tr>" :) . concat $ zipWith f aligns headers
-        where f al blocks = [n $ "<th scope=\"col\"" ++ align al ++ ">"] ++ blocks ++ [n "</th>"]
-
-      tdconvert :: [TableCell] -> [Block]
-      tdconvert tr = (++ [n "</tr>"]) . (n "<tr>" :) . concat $ zipWith f aligns tr
-        where f al blocks = [n $ "<td" ++ align al ++ ">"] ++ blocks ++ [n "</td>"]
-
-      thead = if null headers
-                then []
-                else [n "<thead>"] ++ thconvert ++ [n "</thead>"]
-      tbody = if null rows
-                then []
-                else concatMap tdconvert rows
-  in Div ("", [], []) $ concat
-      [ [n "<table>"]
-      , caption
-      , thead
-      , tbody
-      , [n "</table>"]
-      ]
-ezDoDance x = x
-
 extensions :: Set Extension
 extensions = fromList
   [ Ext_footnotes --
@@ -144,6 +107,16 @@ extensions = fromList
   , Ext_shortcut_reference_links -- [a]: http://
   ]
 
+wOptions :: WriterOptions
+wOptions = def
+  { writerIncremental = False
+  , writerHTMLMathMethod = MathML Nothing
+  , writerIgnoreNotes = False
+  , writerExtensions = extensions
+  , writerHtml5 = True
+  , writerHighlight = False
+  }
+
 main :: IO ()
 main = do
   (opts, nonopts, opterrs) <- getOpt Permute options <$> getArgs
@@ -178,20 +151,13 @@ convert :: Text -- template
         -> String -- tag
         -> String -- body
         -> ByteString
-convert template tag = renderHtml . writeHtml writeOptions . unp . handleError . readMarkdown readOptions
+convert template tag = renderHtml . writeHtml writeOptions . handleError . readMarkdown readOptions
   where readOptions = def { readerExtensions = extensions }
-        writeOptions = def
+        writeOptions = wOptions
           { writerStandalone = True
           , writerTemplate = unpack template
           , writerVariables = [("root", "/blog/"), ("sexytag", tag)]
-          , writerIncremental = False
-          , writerHTMLMathMethod = MathML Nothing
-          , writerIgnoreNotes = False
-          , writerExtensions = extensions
-          , writerHtml5 = True
-          , writerHighlight = False
           }
-        unp (Pandoc meta blocks) = Pandoc meta (walk ezDoDance blocks)
 
 main2 :: FilePath -> (InputFrom, OutputTo) -> IO ()
 main2 templateSrc z = do
