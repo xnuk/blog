@@ -1,2 +1,2 @@
 dest/
-pandoc-custom/.stack-work
+*/.stack-work

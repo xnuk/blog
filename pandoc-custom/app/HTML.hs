@@ -30,12 +30,34 @@ Conversion of 'Pandoc' documents to HTML.
 -}
 module HTML ( writeHtml , writeHtmlString ) where
 import Text.Pandoc.Definition
-import Text.Pandoc.Shared
+  ( Pandoc(Pandoc)
+  , ListNumberStyle(DefaultStyle, Example, Decimal, LowerRoman, UpperRoman, LowerAlpha, UpperAlpha)
+  , Alignment(AlignLeft, AlignRight, AlignCenter, AlignDefault)
+  , QuoteType(SingleQuote, DoubleQuote)
+  , Inline
+    ( Str, Emph, Strong, Strikeout, Superscript, Subscript, SmallCaps, Quoted, Cite, Code, Space
+    , SoftBreak, LineBreak, Math, RawInline, Link, Image, Note, Span
+    )
+  , Attr, nullAttr
+  , Block
+    ( Plain, Para, CodeBlock, RawBlock, BlockQuote, OrderedList, BulletList, DefinitionList
+    , Header, HorizontalRule, Table, Div, Null
+    )
+  , docAuthors, docDate, docTitle
+  , Format(Format)
+  , MathType(DisplayMath, InlineMath)
+  , citationId
+  )
+import Text.Pandoc.Shared (Element(Blk, Sec), stringify, hierarchicalize, normalizeDate, splitBy, substitute)
 import WritersShared (metaToJSON, defField)
 import Text.Pandoc.Options
+  ( WriterOptions(..)
+  , ObfuscationMethod(NoObfuscation, ReferenceObfuscation, JavascriptObfuscation)
+  , WrapOption(WrapAuto, WrapNone, WrapPreserve)
+  )
 import ImageSize (Dimension(Percent), Direction(Width, Height), dimension, showInPixel)
-import Text.Pandoc.Templates
-import Text.Pandoc.Readers.TeXMath
+import Text.Pandoc.Templates (TemplateTarget, renderTemplate')
+import Text.Pandoc.Readers.TeXMath (texMathToInlines)
 import Data.Monoid ((<>))
 import Text.Pandoc.XML (fromEntities, escapeStringForXML)
 import Network.URI ( parseURIReference, URI(..), unEscapeString )
@@ -43,19 +65,21 @@ import Numeric ( showHex )
 import Data.Char ( ord, toLower )
 import Data.List ( isPrefixOf, intersperse, intercalate )
 import Data.String ( fromString )
-import Data.Maybe ( catMaybes )
-import Control.Monad.State
+import Data.Maybe ( catMaybes, fromMaybe )
+import Control.Monad.State (State, evalState, get, gets, modify, zipWithM)
 import Text.Blaze.Html hiding(contents)
 import qualified Text.Blaze.XHtml5 as H5
 import qualified Text.Blaze.XHtml1.Transitional as H
 import qualified Text.Blaze.XHtml1.Transitional.Attributes as A
 import Text.Blaze.Html.Renderer.String (renderHtml)
-import Text.TeXMath
-import Text.XML.Light.Output
+import Text.TeXMath (DisplayType(DisplayInline, DisplayBlock), writeMathML, readTeX)
+import Text.XML.Light.Output (useShortEmptyTags, defaultConfigPP, ppcElement)
 import Text.XML.Light (unode, elChildren, unqual)
 import qualified Text.XML.Light as XML
 import System.FilePath (takeExtension)
 import Data.Aeson (Value)
+import Translation (translations)
+import Text.Printf (printf)
 
 data WriterState = WriterState
     { stNotes            :: [Html]  -- ^ List of notes
@@ -80,11 +104,14 @@ strToHtml xs@(_:_)  = case break (=='\'') xs of
                            (ys,zs) -> toHtml ys `mappend` strToHtml zs
 strToHtml [] = ""
 
+-- | Get translation. Defaults to `ko`.
+getTrans :: WriterOptions -> String -> String
+getTrans w z = fromMaybe "" (lookup lang translations >>= lookup z)
+  where lang = fromMaybe "ko" . lookup "lang" $ writerVariables w
+
 -- | Hard linebreak.
 nl :: WriterOptions -> Html
-nl opts = if writerWrapText opts == WrapNone
-             then mempty
-             else preEscapedString "\n"
+nl opts = if writerWrapText opts == WrapNone then mempty else preEscapedString "\n"
 
 -- | Convert Pandoc document to Html string.
 writeHtmlString :: WriterOptions -> Pandoc -> String
@@ -153,9 +180,9 @@ inTemplate opts context body = renderTemplate' (writerTemplate opts)
 -- | Like Text.XHtml's identifier, but adds the writerIdentifierPrefix
 prefixedId :: WriterOptions -> String -> Attribute
 prefixedId opts s =
-  case s of
-    ""       -> mempty
-    _        -> A.id $ toValue $ writerIdentifierPrefix opts ++ s
+  if null s
+    then mempty
+    else A.id . toValue $ writerIdentifierPrefix opts ++ s
 
 toList :: (Html -> Html) -> ([Html] -> Html)
 toList listop items = listop $ mconcat items
@@ -204,13 +231,10 @@ elementToListItem opts (Sec lev num (id',classes,_) headerText subsecs)
                    then mempty
                    else unordList opts subHeads
   -- in reveal.js, we need #/apples, not #apples:
-  let revealSlash = []
-  return $ Just
-         $ if null id'
-              then H.a (toHtml txt) >> subList
-              else (H.a ! A.href (toValue $ "#" ++ revealSlash ++
-                    writerIdentifierPrefix opts ++ id')
-                       $ toHtml txt) >> subList
+  return . Just $ if null id'
+    then H.a (toHtml txt) >> subList
+    else (H.a ! A.href (toValue $ "#" ++ writerIdentifierPrefix opts ++ id')
+             $ toHtml txt) >> subList
 elementToListItem _ _ = return Nothing
 
 -- | Convert an Element to Html.
@@ -238,26 +262,30 @@ elementToHtml opts (Sec level num (id',classes,keyvals) title' elements) = do
                                   []     -> []
                                   (x:xs) -> x ++ concatMap inDiv xs
   let inNl x = mconcat $ nl opts : intersperse (nl opts) x ++ [nl opts]
-  let classes' =  ["level" ++ show level | writerSectionDivs opts ]
-                  ++ classes
-  let secttag  = H5.section
+  let classes' =  ["level" ++ show level | writerSectionDivs opts ] ++ classes
   let attr = (id',classes',keyvals)
   return $ if writerSectionDivs opts
                    then addAttrs opts attr
-                        $ secttag $ inNl $ header' : innerContents
+                        $ H5.section $ inNl $ header' : innerContents
                    else mconcat $ intersperse (nl opts)
                         $ addAttrs opts attr header' : innerContents
 
 -- | Convert list of Note blocks to a footnote <div>.
 -- Assumes notes are sorted.
 footnoteSection :: WriterOptions -> [Html] -> Html
-footnoteSection opts notes =
-  if null notes
-     then mempty
-     else nl opts >> container
-            (nl opts >> H5.hr >> nl opts >>
-              H.ol (mconcat notes >> nl opts) >> nl opts)
-   where container = H5.section ! A.class_ "footnotes"
+footnoteSection _ [] = mempty
+footnoteSection opts notes = do
+  let container = H5.footer ! A.class_ "footnotes"
+      lf = nl opts
+  lf
+  container $ do
+    lf
+    H5.hr
+    lf
+    H.ol $ do
+      mconcat notes
+      lf
+    lf
 
 -- | Parse a mailto link; return Just (name, domain) or Nothing.
 parseMailto :: String -> Maybe (String, String)
@@ -381,7 +409,6 @@ blockToHtml opts (Div (ident, classes, kvs) bs) = do
 blockToHtml opts (RawBlock f str)
   | f == Format "html" = return $ preEscapedString str
   | (f == Format "latex" || f == Format "tex") &&
-     allowsMathEnvironments (MathML Nothing) &&
      isMathEnvironment str = blockToHtml opts $ Plain [Math DisplayMath str]
   | otherwise          = return mempty
 blockToHtml _ HorizontalRule = return H5.hr
@@ -395,24 +422,37 @@ blockToHtml opts (BlockQuote blocks) =
   do
        contents <- blockListToHtml opts blocks
        return $ H.blockquote $ nl opts >> contents >> nl opts
-blockToHtml opts (Header level attr@(_,classes,_) lst) = do
+blockToHtml opts (Header level attr@(id',classes,_) lst) = do
   contents <- inlineListToHtml opts lst
   secnum <- stSecNum <$> get
-  let contents' = if writerNumberSections opts && not (null secnum)
-                     && "unnumbered" `notElem` classes
-                     then (H.span ! A.class_ "header-section-number" $ toHtml
-                          $ showSecNum secnum) >> strToHtml " " >> contents
-                     else contents
+  let contents' = do
+        H.a ! A.href (toValue $ '#' : writerIdentifierPrefix opts ++ id')
+            ! A.class_ "self"
+            ! customAttribute "aria-label" (toValue (
+                printf
+                  (getTrans opts "paragraph_anchor")
+                  (stringify $ Span nullAttr lst)
+                  :: String
+              ))
+            $ "§"
+        if writerNumberSections opts && not (null secnum) && "unnumbered" `notElem` classes
+          then do
+            H.span ! A.class_ "header-section-number" $ toHtml $ showSecNum secnum
+            strToHtml " "
+          else mempty
+        contents
   inElement <- gets stElement
-  return $ (if inElement then id else addAttrs opts attr)
-         $ case level of
-              1 -> H.h1 contents'
-              2 -> H.h2 contents'
-              3 -> H.h3 contents'
-              4 -> H.h4 contents'
-              5 -> H.h5 contents'
-              6 -> H.h6 contents'
-              _ -> H.p contents'
+  return
+    $ (if inElement then id else addAttrs opts attr)
+    $ case level of
+        1 -> H.h1
+        2 -> H.h2
+        3 -> H.h3
+        4 -> H.h4
+        5 -> H.h5
+        6 -> H.h6
+        _ -> H.p
+    $ contents'
 blockToHtml opts (BulletList lst) = do
   contents <- mapM (blockListToHtml opts) lst
   return $ unordList opts contents
@@ -628,20 +668,21 @@ inlineToHtml opts inline =
                         -- note:  null title included, as in Markdown.pl
     (Note contents)
       | writerIgnoreNotes opts -> return mempty
-      | otherwise              -> do
-                        notes <- gets stNotes
-                        let number = length notes + 1
-                        let ref = show number
-                        htmlContents <- blockListToNote opts ref contents
-                        -- push contents onto front of notes
-                        modify $ \st -> st {stNotes = htmlContents:notes}
-                        let link = H.a ! A.href (toValue $ "#" ++
-                                         writerIdentifierPrefix opts ++ "fn" ++ ref)
-                                       ! A.class_ "footnoteRef"
-                                       ! prefixedId opts ("fnref" ++ ref)
-                                       $ H.sup
-                                       $ toHtml ref
-                        return link
+      | otherwise -> do
+          notes <- gets stNotes
+          let number = length notes + 1
+          let ref = show number
+          htmlContents <- blockListToNote opts ref contents
+          -- push contents onto front of notes
+          modify $ \st -> st {stNotes = htmlContents:notes}
+          let link = writerIdentifierPrefix opts ++ "fn" ++ ref
+          let anchor = H.a ! A.href (toValue $ "#" ++ link)
+                           ! A.class_ "footnoteRef"
+                           ! customAttribute "aria-describedby" (toValue link)
+                           ! prefixedId opts ("fnref" ++ ref)
+                           $ H.sup
+                           $ toHtml ref
+          return anchor
     (Cite cits il)-> do contents <- inlineListToHtml opts il
                         let citationIds = unwords $ map citationId cits
                         let result = H.span ! A.class_ "citation" $ contents
@@ -651,21 +692,24 @@ blockListToNote :: WriterOptions -> String -> [Block] -> State WriterState Html
 blockListToNote opts ref blocks =
   -- If last block is Para or Plain, include the backlink at the end of
   -- that block. Otherwise, insert a new Plain block with the backlink.
-  let backlink = [Link nullAttr [Str "↩"] ("#" ++ writerIdentifierPrefix opts ++ "fnref" ++ ref,[])]
-      blocks'  = if null blocks
-                    then []
-                    else let lastBlock   = last blocks
-                             otherBlocks = init blocks
-                         in  case lastBlock of
-                                  (Para lst)  -> otherBlocks ++
-                                                 [Para (lst ++ backlink)]
-                                  (Plain lst) -> otherBlocks ++
-                                                 [Plain (lst ++ backlink)]
-                                  _           -> otherBlocks ++ [lastBlock,
-                                                 Plain backlink]
-  in  do contents <- blockListToHtml opts blocks'
-         let noteItem = H.li ! prefixedId opts ("fn" ++ ref) $ contents
-         return $ nl opts >> noteItem
+  let footnote_backlink = getTrans opts "footnote_backlink"
+      backlink =
+        [ Link
+            ("", ["ref-backlink"], [("aria-label", footnote_backlink)])
+            [Str "↩"]
+            ("#" ++ writerIdentifierPrefix opts ++ "fnref" ++ ref, [])
+        ]
+      blocks' =
+        if null blocks then [] else
+          let lastBlock   = last blocks
+              otherBlocks = init blocks
+          in case lastBlock of
+                (Para lst)  -> otherBlocks ++ [Para  (lst ++ backlink)]
+                (Plain lst) -> otherBlocks ++ [Plain (lst ++ backlink)]
+                _           -> otherBlocks ++ [lastBlock, Plain backlink]
+  in do contents <- blockListToHtml opts blocks'
+        let noteItem = H.li ! prefixedId opts ("fn" ++ ref) $ contents
+        return $ nl opts >> noteItem
 
 
 isMathEnvironment :: String -> Bool
@@ -699,9 +743,3 @@ isMathEnvironment s = "\\begin{" `isPrefixOf` s &&
                      , "subarray"
                      , "Vmatrix"
                      , "vmatrix" ]
-
-allowsMathEnvironments :: HTMLMathMethod -> Bool
-allowsMathEnvironments (MathJax _) = True
-allowsMathEnvironments (MathML _)  = True
-allowsMathEnvironments (WebTeX _)  = True
-allowsMathEnvironments _           = False

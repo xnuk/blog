@@ -1,16 +1,12 @@
 module Main (main) where
 
-import Prelude hiding (readFile, writeFile, getContents, putStrLn, putStr)
-import qualified Prelude
+import Prelude hiding (readFile, writeFile)
 import Text.Pandoc.Options (ReaderOptions(..), WriterOptions(..), def, HTMLMathMethod(MathML), Extension(..))
 import Text.Pandoc.Readers.Markdown (readMarkdown)
 import HTML (writeHtml)
 import Text.Pandoc.Error (handleError)
 import System.Environment (getArgs)
 import Data.Set (fromList, Set)
-import Data.Text.Lazy.Encoding (decodeUtf8)
-import Data.Text.Lazy.IO (readFile, getContents, putStrLn)
-import Data.Text.Lazy (pack, unpack, Text)
 import System.FilePath ((</>), (<.>), (-<.>), takeDirectory, takeBaseName, makeRelative)
 import System.Directory (doesDirectoryExist, createDirectoryIfMissing)
 import System.Console.GetOpt (OptDescr(Option), ArgDescr(NoArg, ReqArg), getOpt, ArgOrder(Permute), usageInfo)
@@ -21,9 +17,9 @@ import Safe (atMay)
 import Control.Applicative ((<|>))
 import System.FilePath.Find (find, always, extension, (==?))
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as B (writeFile)
+import Data.ByteString.Lazy (ByteString, readFile, writeFile)
 import System.IO (stderr, hPutStrLn)
+import Data.ByteString.Lazy.UTF8 (toString)
 
 data InputFrom = FromSTDIN | FromFile FilePath | FromDirectory FilePath
 data OutputTo = ToSTDOUT | ToFile FilePath | ToDirectory FilePath
@@ -147,7 +143,7 @@ main = do
     OptVersion:_ -> Prelude.putStrLn versionStr
     _ -> fail $ "helpversion : " ++ undefinedCase
 
-convert :: Text -- template
+convert :: String -- template
         -> String -- tag
         -> String -- body
         -> ByteString
@@ -155,20 +151,20 @@ convert template tag = renderHtml . writeHtml writeOptions . handleError . readM
   where readOptions = def { readerExtensions = extensions }
         writeOptions = wOptions
           { writerStandalone = True
-          , writerTemplate = unpack template
+          , writerTemplate = template
           , writerVariables = [("root", "/blog/"), ("sexytag", tag)]
           }
 
 main2 :: FilePath -> (InputFrom, OutputTo) -> IO ()
 main2 templateSrc z = do
   template <- readFile templateSrc
-  let conv tag = convert template tag . unpack
+  let conv = convert (toString template)
       write str toPath = do
         createDirectoryIfMissing True $ takeDirectory toPath
-        B.writeFile toPath str
+        writeFile toPath str
       fileToFile tag fromPath toPath = do
         src <- readFile fromPath
-        write (conv tag src) toPath
+        write (conv tag (toString src)) toPath
       walkMarkdown fromPath f = do
         paths <- map (makeRelative fromPath) <$> find always (extension ==? ".md") fromPath
         mapM_ f paths
@@ -179,9 +175,9 @@ main2 templateSrc z = do
       walkMarkdown fromPath $ \path ->
         fileToFile (dropWhile (`elem` ".\\/") $ takeDirectory path) (fromPath </> path) (toPath </> path -<.> "html")
     (FromDirectory fromPath, ToSTDOUT) -> walkMarkdown fromPath $ \path -> do
-      putStrLn . pack $ "\n\n" ++ path ++ ":\n\n"
-      readFile (fromPath </> path) >>= putStrLn . decodeUtf8 . conv (dropWhile (`elem` ".\\/") $ takeDirectory path)
+      putStrLn $ "\n\n" ++ path ++ ":\n\n"
+      readFile (fromPath </> path) >>= putStrLn . toString . conv (dropWhile (`elem` ".\\/") $ takeDirectory path) . toString
     (FromSTDIN, ToFile toPath) -> getContents >>= (`write` toPath) . conv ""
-    (FromFile fromPath, ToSTDOUT) -> readFile fromPath >>= putStrLn . decodeUtf8 . conv ""
-    (FromSTDIN, ToSTDOUT) -> getContents >>= putStrLn . decodeUtf8 . conv ""
+    (FromFile fromPath, ToSTDOUT) -> readFile fromPath >>= putStrLn . toString . conv "" . toString
+    (FromSTDIN, ToSTDOUT) -> getContents >>= putStrLn . toString . conv ""
     _ -> fail $ "main2 - case z : " ++ undefinedCase
