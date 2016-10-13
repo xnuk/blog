@@ -13,3 +13,7 @@ lang: en
 <section><header class="tag-haskell">Haskell</header>
 - [Haskell을 설치하는 법](haskell/how_to_install.html)
 </section>
+
+<section><header class="tag-web">Web</header>
+- [웹 접근성을 고려합시다](web/a11y.html)
+</section>

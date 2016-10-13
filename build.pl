@@ -1,5 +1,4 @@
-foreach (grep {$_ =~ /\.md$/} map {chomp; $_} `find posts/`){
-	/^posts\/(((?:.+)(?:\/.+)*)\/)?([^\/]+)\.md$/;
-	my $a = "--title-prefix " . $2 if $2;
-	`mkdir -p dest/$1; pandoc --variable "root:/blog/" --template src/template.html $a --mathml $& -o dest/$1$3.html\n`
+foreach (grep {$_ =~ /\.(?:png|jpg|gif)$/} map {chomp; $_} `find posts/`){
+	m|^posts/(.+/)?([^/]+)$|;
+	`mkdir -p dest/$1; cp posts/$1$2 dest/$1;`
 }

@@ -17,6 +17,7 @@ dependencies:
 test:
              override:
                           - ~/.local/bin/pandoc-custom --template src/template.html --from ./posts/ --to ./dest/
+                          - perl build.pl
                           - stylus src/*.styl --compress
                           - cp src/*.{js,css} dest/
 
