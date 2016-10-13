@@ -7,7 +7,7 @@ insert_final_newline = true
 [*.md]
 indent_style = space
 
-[*.{js,css,html,pl}]
+[*.{js,css,html,pl,styl}]
 indent_style = tab
 indent_size = 4
 
