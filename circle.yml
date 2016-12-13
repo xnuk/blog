@@ -9,7 +9,7 @@ dependencies:
                           - echo 'deb http://download.fpcomplete.com/ubuntu trusty main'|sudo tee /etc/apt/sources.list.d/fpco.list
                           - sudo apt-get update && sudo apt-get install stack -y
              post:
-                          - cd pandoc-custom/ && stack install
+                          - cd pandoc-custom/ && stack setup --install-ghc && stack install
              cache_directories:
                           - ~/.stack
                           - ~/.local/bin
