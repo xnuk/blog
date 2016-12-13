@@ -33,5 +33,5 @@ deployment:
                                        - git add -A
                                        - git config user.name "Xnuk Shuman"
                                        - git config user.email "admin@xnu.kr"
-                                       - git commit -m 'page [no test]'
+                                       - git commit -m 'page [no ci]'
                                        - git push origin gh-pages -f
