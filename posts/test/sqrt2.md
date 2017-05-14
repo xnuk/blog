@@ -1,7 +1,10 @@
 ---
-title: 문제풀이
+title: 다음 중 루트 2에 가장 가까운 값은?
 lang: ko
 ---
+
+<blockquote class="twitter-tweet" data-lang="en-gb"><p lang="ko" dir="ltr">다음 중 루트2에 가장 가까운 값은? <a href="https://t.co/IwzAiy4PtS">pic.twitter.com/IwzAiy4PtS</a></p>&mdash; ㅎㅅㅎ (@loudcolour) <a href="https://twitter.com/loudcolour/status/863778834570649600">14 May 2017</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 보기의 문항은 모두 분모가 12인 분수로 나타낼 수 있다.
 $1<2$이므로 $1<\sqrt2$이다. 따라서 $a<\sqrt2$인 1보다 큰 실수 $a$가 존재하고, $a<\sqrt2$와 $a^2 < 2$는 서로 필요충분조건이다.
