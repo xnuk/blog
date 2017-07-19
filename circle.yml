@@ -13,6 +13,7 @@ dependencies:
              cache_directories:
                           - ~/.stack
                           - ~/.local/bin
+                          - ./pandoc-custom/.stack-works
 
 test:
              override:
