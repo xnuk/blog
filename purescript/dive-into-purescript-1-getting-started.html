@@ -1,0 +1,118 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="author" content="Xnuk Shuman">
+<title>Dive into PureScript - Getting Started - Xnuk Shuman</title>
+<link rel="stylesheet" href="/blog/normalize.css" type="text/css">
+<link rel="stylesheet" href="/blog/atom-one-dark.css" type="text/css">
+<link rel="stylesheet" href="/blog/index.css" type="text/css">
+<script src='/blog/bowser.js'></script><script src='/blog/highlight.js'></script>
+</head><body
+><main class="tag-purescript"><article><header>Dive into PureScript - Getting Started</header><p>뭔가 만들긴 해야겠습니다. 제가 만들어야 할 목록 중에 테트리스 시뮬레이터라는 것이 있는데, 간단히 말하자면 그냥 테트리미노가 떨어지는 속도가 0이라서 블록 위치를 확정짓기 전까지 마음대로 돌려보고 벽차기도 할 수 있는 걸 만들려 했습니다. 다 만들지는 모르겠지만 무튼 그런 걸 만들려고 합니다. <a href="http://elm-lang.org/">Elm</a>은 써봤고 테트리스 짜기에는 적합합니다만 언어 디자인이 약간씩 나사가 빠져 있는 그런 언어라 (아 물론 생 자바스크립트보다야 Elm이 낫습니다.) 좀 더 Haskell에 가깝다는 <a href="http://www.purescript.org/">PureScript</a>를 써보기로 했습니다. 이하는 그 삽질기입니다.</p>
+<h2 id="purescript"><a href="#purescript" class="self" aria-label="단락 링크: PureScript?">§</a>PureScript?</h2>
+<p><a href="http://www.purescript.org/">PureScript 홈페이지</a>를 들어가면 그 진상을 알 수 있습니다. PureScript는:</p>
+<ul>
+<li>손쉽게 기존 자바스크립트 코드를 끌어다 쓸 수 있고</li>
+<li>Type class가 존재하기 때문에 전역 함수의 이름 충돌을 줄여 더욱 깔끔하게 쓸 수 있으며</li>
+<li>do notation이 존재하여 필요할 땐 코드를 완전히 절차형처럼 쓸 수 있고</li>
+<li>패키지 시스템을 Bower에 기대어 사용하기 때문에 손쉽게 패키지를 추가할 수 있습니다.</li>
+</ul>
+<p>이 넷은 Elm엔 없는 기능입니다. 부차적인 것을 보면, PureScript의 Hello, world! 코드는 다음과 같습니다:</p>
+<pre class="haskell"><code>import Prelude
+import Control.Monad.Eff.Console (log)
+
+greet :: String -&gt; String
+greet name = &quot;Hello, &quot; &lt;&gt; name &lt;&gt; &quot;!&quot;
+
+main = log (greet &quot;World&quot;)</code></pre>
+<p>네, 완전히 그냥 Haskell이네요. <a href="https://github.com/purescript/documentation/blob/master/language/Differences-from-Haskell.md">Haskell하고 다른 점을 정리해 둔 문서</a>도 있습니다.</p>
+<h2 id="개발-환경-설정"><a href="#개발-환경-설정" class="self" aria-label="단락 링크: 개발 환경 설정">§</a>개발 환경 설정</h2>
+<p><a href="https://github.com/purescript/documentation/blob/master/guides/Getting-Started.md">Getting Started</a>를 보시면 npm으로 설치하는 방법이 있고 그냥 바이너리를 받는 방법도 있는데, 저는 npm으로 받는 방법을 선택했습니다.</p>
+<pre><code>$ npm install -g purescript pulp purescript-psa bower</code></pre>
+<p>이러면 PureScript의 컴파일러인 <code>purs</code>와, 빌드 매니저인 <code>pulp</code>와, 예쁜 경고를 보여주는 <code>psa</code>와, 제발 자신을 설치하지 말고 <a href="https://yarnpkg.com">Yarn</a>이나 <a href="https://www.npmjs.com/">npm</a>을 써달라고 간곡히 부탁하는 <code>bower</code>가 설치됩니다. PureScript는 <a href="http://harry.garrood.me/blog/purescript-why-bower/">npm이 의존 패키지 충돌을 패키지 안에 패키지를 설치하는 방식으로 해결하는 문제</a> 때문에 그렇지 않는 Bower에 기대고 있는데, <a href="https://github.com/purescript/psc-package">Bower와 Node를 제거하려는 시도</a> 역시 볼 수 있습니다.</p>
+<p><a href="https://github.com/purescript/documentation/blob/master/ecosystem/Editor-and-tool-support.md">에디터는 현재까지는 Atom, Emacs, Sublime Text 2, Vim, VS Code를 지원</a>합니다. 저는 이 참에 VS Code를 받아서 설치를 해봤습니다.</p>
+<p>다 설치했으면, 이제 빈 폴더에</p>
+<pre><code>$ pulp init</code></pre>
+<p>라고 치면 뭔가 마법같이 많이 생깁니다. 패키지 인스톨은</p>
+<pre><code>$ bower install purescript-lists --save</code></pre>
+<p>와 같이 bower로 할 수 있고, REPL은 <code>$ pulp repl</code>로, 브라우저용 빌드는</p>
+<pre><code>$ pulp browserify -O --to path/to/output.js</code></pre>
+<p>로 해보실 수 있습니다. CommonJS용 빌드는 <code>browserify</code> 대신에 <code>build</code>를 써주면 됩니다. 이제 Hello, world!를 써봅시다. 생성된 <code>src/Main.purs</code> 코드를 열어 다음과 같이 써줍니다:</p>
+<pre class="haskell"><code>module Main where
+
+import Prelude
+import Control.Monad.Eff.Console (log)
+
+greet :: String -&gt; String
+greet name = &quot;Hello, &quot; &lt;&gt; name &lt;&gt; &quot;!&quot;
+
+main = log (greet &quot;World&quot;)</code></pre>
+<p>그리고 빌드합니다.</p>
+<pre><code>$ pulp browserify -O --to ./output.js
+Compiling Main
+[1/1 MissingTypeDeclaration] src/Main.purs:9:1
+
+  9  main = log (greet &quot;World&quot;)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  No type declaration was provided for the top-level declaration of main.
+  It is good practice to provide type declarations as a form of documentation.
+  The inferred type of main was:
+
+    forall t3.
+      Eff
+        ( console :: CONSOLE
+        | t3
+        )
+        Unit
+
+  in value declaration main</code></pre>
+<p>음?</p>
+<h2 id="eff"><a href="#eff" class="self" aria-label="단락 링크: Eff">§</a>Eff</h2>
+<p>저 뜨는 것에 굳이 신경 쓸 필요까진 없습니다. 단순히 <code>main</code>에 타입을 안 썼다는 <em>경고</em>일 뿐, 컴파일에는 지장이 없습니다. 저 코드에서 생성된 <code>./output.js</code>를 갖다가 브라우저 콘솔에 실행시키면 문제 없이 <code>Hello, World!</code>라고 뜨시는 걸 볼 수 있습니다. 그럼 저</p>
+<pre><code>The inferred type of main was:
+  forall t3. Eff (console :: CONSOLE | t3) Unit</code></pre>
+<p>은 무엇일까요? 바로 side effect를 다루기 위한 PureScript의 방법입니다. Haskell은 <code>IO ()</code>라고 타입을 설정해서 쉽고 간단한 타입을 보여주지만, PureScript는 이것이 너무 포괄적이고 상세하지 않다면서 쓰는 side effect 들을 모두 타입에 기재해버리는 행위를 저질러 어렵고 긴 타입을 만들었습니다.</p>
+<p><a href="https://github.com/purescript/documentation/blob/master/guides/Eff.md">Eff에 대해서 따로 기술해둔 문서</a>가 존재하니 이를 참고하는 것도 좋습니다. 일단 <code>Eff</code>라는 것은 소스 코드를 보면 다음과 같이 정의되어 있습니다:</p>
+<pre class="haskell"><code>foreign import kind Effect
+foreign import data Eff :: # Effect -&gt; Type -&gt; Type</code></pre>
+<p><code>kind</code>라는 것은 <strong>타입의 타입</strong>이라고 이해하시면 좋습니다. <code>Effect</code>라는 속성을 만족하는 타입은 대충 저 <code>Effect</code> 자리에 들어갈 수 있는 것입니다. <code>Type</code>도 역시 <code>kind</code>입니다만 이건 그냥 모든 타입을 말하죠. 여기서 <code>data Eff :: # Effect -&gt; Type -&gt; Type</code>가 있는데, 이 <code>#</code>이라는 것은 <em>unordered collection</em>이랩니다. 즉, 저 <code>Eff</code>라는 것은</p>
+<ol type="1">
+<li><code># Effect</code>: <code>Effect</code>를 만족하는 타입들의 순서 없는 나열과</li>
+<li><code>Type</code> : 그냥 타입 하나를 받아</li>
+<li><code>Type</code>: 타입을 반환하는 함수입니다.</li>
+</ol>
+<p><code>foreign import</code>라 그 함수에 대한 구현은 바깥 어딘가에 있고 아직 별로 궁금하지 않습니다. 그래서</p>
+<pre class="haskell"><code>forall t3. Eff (console :: CONSOLE | t3) Unit</code></pre>
+<p>라는 것은 그냥 <code>Type</code>이 되겠지요. 앞에 붙은 <code>forall t3.</code>라는 것은 &quot;모든 <code>t3</code>에 대해,&quot;라는 뜻입니다. 저 <code>|</code>라는 것은 <code>t3</code>라는 타입이 <code>console :: CONSOLE</code>이라는 사이드 이펙트 속성을 가지고 있는 타입이란 뜻입니다. <code>data CONSOLE :: Effect</code>처럼 정의되었기 때문에 <code>CONSOLE</code>은 <code>Effect</code>를 만족하는 타입이라는 것을 알 수 있습니다. 다른 예를 들어:</p>
+<pre class="haskell"><code>forall t. Eff (console :: CONSOLE, random :: RANDOM | t) Unit</code></pre>
+<p>라면 <code>t</code>는 <code>console :: CONSOLE</code>이라는 속성과 <code>random :: RANDOM</code>이라는 속성을 가지고 있는 타입이 됩니다.</p>
+<p>자바스크립트의 object literal에 해당하는 record syntax도 비슷합니다. 예로 다음과 같은 함수가 있다면:</p>
+<pre class="haskell"><code>fullName :: forall t. { firstName :: String, lastName :: String | t } -&gt; String
+fullName x = x.firstName &lt;&gt; &quot; &quot; &lt;&gt; x.lastName</code></pre>
+<p><code>t</code>는 <code>firstName</code>과 <code>lastName</code>을 키로 가지면 되는 record 타입이 됩니다. 다른 키가 있는지 없는지는 상관이 없기 때문에 다음과 같은 결과가 반환됩니다:</p>
+<pre class="haskell"><code>&gt; fullName { firstName: &quot;Phil&quot;, lastName: &quot;Freeman&quot;, location: &quot;Los Angeles&quot; }
+Phil Freeman</code></pre>
+<hr />
+<p>무튼 정리하자면 이렇게 됩니다.</p>
+<pre class="haskell"><code>forall t3. Eff (console :: CONSOLE | t3) Unit</code></pre>
+<p>라는 것은,</p>
+<ol type="1">
+<li><code>forall t3.</code> : 모든 <code>t3</code>에 대해.</li>
+<li><code>Eff</code> : 이것은 사이드 이펙트를 사용하는 타입이고</li>
+<li><code>(console :: CONSOLE | t3)</code> : 사이드 이펙트로 콘솔을 사용하고,</li>
+<li><code>Unit</code> : 결과로 <code>Unit</code>을 반환한다.</li>
+</ol>
+<p>가 됩니다. <code>Unit</code>은 빈 값만 있는 타입이기 때문에 결국 반환값이 빈 값이라고 볼 수 있습니다.</p>
+<pre class="haskell"><code>module Main where
+
+import Prelude
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (log, CONSOLE)
+
+greet :: String -&gt; String
+greet name = &quot;Hello, &quot; &lt;&gt; name &lt;&gt; &quot;!&quot;
+
+main :: forall t. Eff (console :: CONSOLE | t) Unit
+main = log (greet &quot;World&quot;)</code></pre>
+<p>코드를 이렇게 고치면 이제 경고가 안 뜨게 됩니다.</p>
+<p>심란한 Hell-o-world가 끝났습니다.</p></article></main
+><script src='/blog/index.js'></script></body></html>

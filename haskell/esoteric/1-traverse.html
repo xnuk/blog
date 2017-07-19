@@ -1,0 +1,161 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="author" content="Xnuk Shuman">
+<title>Esoteric Haskell - 1 - Xnuk Shuman</title>
+<link rel="stylesheet" href="/blog/normalize.css" type="text/css">
+<link rel="stylesheet" href="/blog/atom-one-dark.css" type="text/css">
+<link rel="stylesheet" href="/blog/index.css" type="text/css">
+<script src='/blog/bowser.js'></script><script src='/blog/highlight.js'></script>
+</head><body
+><main class="tag-haskell/esoteric"><article><header>Esoteric Haskell - 1</header><pre class="haskell"><code>traverse (\x -&gt; [0..x]) [0..2]</code></pre>
+<p>난해한 하스켈 코드 중에서는 애교 수준이지만, 충분히 난해한 편이긴 하다. 충분히 쉬워보인다는 분들을 위해, 이걸 실행하지 말고 무슨 결과가 나올지 예측해보자.</p>
+<h2 id="traversable"><a href="#traversable" class="self" aria-label="단락 링크: Traversable">§</a>Traversable</h2>
+<p><a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Traversable.html#v:traverse"><code>traverse</code></a>는 <a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Traversable.html#t:Traversable"><code>Traversable</code></a> 타입 클래스의 필수 구현 함수이다. 문서 위쪽에 적힌 설명문은 구현할 때 조심해야 할 사항들이고, 일단 타입 먼저 보자.</p>
+<pre class="haskell"><code>traverse :: (Traversable t, Applicative f) =&gt; (a -&gt; f b) -&gt; t a -&gt; f (t b)</code></pre>
+<p><code>Traversable</code>은 배열이나 리스트 생각하시면 좋다. 뭔가 원소를 담을 수 있는 것인데 동시에 왼쪽에서 오른쪽으로 탐방도 가능한 그런 것들을 <code>Traversable</code>이라고 한다.</p>
+<p><code>traverse</code>는 첫 번째 인자로 함수 <code>a -&gt; f b</code>를 받는다. 원소 <code>a</code>를 받아 결과값 <code>b</code>를 얻을 수 있는 동작 <code>f b</code>를 반환한다. 두 번째 인자로 <code>t a</code>라는 배열 비슷한 걸 받고, 이걸 가지고</p>
+<ol type="1">
+<li>각각 원소마다 함수 <code>a -&gt; f b</code>를 왼쪽에서 오른쪽으로 실행하고</li>
+<li>나온 결과값들 <code>t b</code>를 <code>f</code>에 감싸서 반환하는, 그런 함수다.</li>
+</ol>
+<p>간단히 예제를 들자면,</p>
+<pre class="haskell"><code>traverse print [1, 2, 3]</code></pre>
+<p>이 있겠다. <code>print</code>는 <code>a -&gt; IO ()</code>로서 <code>a</code>를 출력하는 동작을 뱉는 함수다. 당연히 출력값은</p>
+<pre><code>1
+2
+3</code></pre>
+<p>이 된다. 왼쪽부터 오른쪽으로니까.</p>
+<p>자, 이제 <code>traverse (\x -&gt; [0..x]) [0..2]</code>는 뭐가 나올 거 같은가?</p>
+<h2 id="신비하고-난해한-리스트의-세계"><a href="#신비하고-난해한-리스트의-세계" class="self" aria-label="단락 링크: 신비하고 난해한 리스트의 세계">§</a>신비하고 난해한 리스트의 세계</h2>
+<pre class="haskell"><code>&gt; traverse (\x -&gt; [0..x]) [0..2]
+[[0,0,0],[0,0,1],[0,0,2],[0,1,0],[0,1,1],[0,1,2]]</code></pre>
+<p>환영한다. 일단 타입을 다시 보자.</p>
+<pre class="haskell"><code>traverse :: (Traversable t, Applicative f) =&gt; (a -&gt; f b) -&gt; t a -&gt; f (t b)</code></pre>
+<p>여기서 우리는 <code>t a</code>에 <code>[0..2]</code>를 넣었고 이건 헷갈릴 여지가 없이 <code>Num a =&gt; [a]</code>다. 당연히 리스트는 예측 가능하게 <code>Traversable</code>일 테니까. 대충 숫자를 <code>Int</code>로 잡아 <code>[Int]</code>로 보자. 숫자는 별 상관없다. (참고로 <code>[Int]</code>는 <code>[] Int</code>로 볼 수 있어서, <code>t</code>를 <code>[]</code>로 볼 수 있는 것이다.)</p>
+<pre class="haskell"><code>traverse :: (Applicative f) =&gt; (Int -&gt; f b) -&gt; [Int] -&gt; f [b]</code></pre>
+<p><code>\x -&gt; [0..x]</code>의 타입은 당연히 <code>Int -&gt; [Int]</code>다. 그럼 <code>f b</code>를 <code>[Int]</code>로 볼 수 있는 건가? 즉, 리스트는 <code>Applicative</code>한 것인가?</p>
+<pre class="haskell"><code>traverse :: (Int -&gt; [Int]) -&gt; [Int] -&gt; [[Int]]</code></pre>
+<p>물론.</p>
+<h2 id="applicative"><a href="#applicative" class="self" aria-label="단락 링크: Applicative">§</a>Applicative</h2>
+<p><a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Control-Applicative.html#t:Applicative"><code>Applicative</code></a>는 뭔가를 담고 있는데, 거기에 뭔가 적용을 시킬 수 있는 녀석들을 말한다. 필수 구현 함수에 <code>pure</code>와 <code>&lt;*&gt;</code>가 있는데, 잠깐 감상하자.</p>
+<pre class="haskell"><code>pure :: Applicative f =&gt; a -&gt; f a</code></pre>
+<p><code>pure</code>는 그냥 값을 <code>Applicative</code>한 녀석으로 감싸주는 함수이다. 간단한 함수.</p>
+<pre class="haskell"><code>(&lt;*&gt;) :: Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b</code></pre>
+<p><code>&lt;*&gt;</code>는 적용을 시켜주는 연산자인데</p>
+<ol type="1">
+<li>왼쪽에 <code>f (a -&gt; b)</code>라는 함수를 감싼 걸 받고</li>
+<li>오른쪽에 <code>f a</code>를 받아</li>
+<li>적용시켜서</li>
+<li><code>f b</code>를 내뱉는다.</li>
+</ol>
+<p>뭐 대충 예시를 들자면</p>
+<pre class="haskell"><code>(pure (+1) &lt;*&gt; pure 1) == pure 2</code></pre>
+<p>라는 소리다. 그럼 리스트는 이걸 어떻게 구현한 걸까? 감상해보자.</p>
+<pre class="haskell"><code>instance Applicative [] where
+    pure x    = [x]
+    fs &lt;*&gt; xs = [f x | f &lt;- fs, x &lt;- xs]</code></pre>
+<p><code>pure x = [x]</code>는 당연한 얘기다. <code>fs &lt;*&gt; xs</code>는 <code>fs</code>에서 함수 <code>f</code>를 하나 꺼내고, <code>xs</code>에서 원소 <code>x</code> 하나를 꺼내서, <code>f x</code>를 배열에 저장하는 것<strong>처럼 보인다</strong>. 물론 아니다. <code>fs</code>와 <code>xs</code>가 길이가 다를 수 있기 때문에, 그리 구현되진 않는다. Haskell의 List comprehension은 쉼표 왼쪽의 경우의 수 하나에 쉼표 오른쪽의 경우를 모두 계산한다. 즉, 위의 문장은:</p>
+<ol type="1">
+<li><code>fs</code>에서 <code>f</code>를 하나 꺼내서, <code>xs</code>에 있는 모든 원소에 적용시킨다.</li>
+<li>이 과정을 <code>fs</code> 안에 있는 함수에 모두 적용하고 그 결과들을 나열한다.</li>
+</ol>
+<p>되시겠다. 간단히 예를 들자면 이렇다:</p>
+<pre class="haskell"><code>&gt; [(+1), (+2), (+4)] &lt;*&gt; [3, 4, 5]
+[4,5,6,5,6,7,7,8,9]</code></pre>
+<p>그럼 이제 <code>Traversable</code>을 다시 보도록 하자.</p>
+<h2 id="리스트의-traversable"><a href="#리스트의-traversable" class="self" aria-label="단락 링크: 리스트의 Traversable">§</a>리스트의 Traversable</h2>
+<pre class="haskell"><code>instance Traversable [] where
+    traverse f = foldr cons_f (pure [])
+      where cons_f x ys = (:) &lt;$&gt; f x &lt;*&gt; ys</code></pre>
+<p>좀 난해하게 쓰였다. 일단 <code>cons_f</code>부터 보자.</p>
+<pre class="haskell"><code>cons_f x ys = (:) &lt;$&gt; f x &lt;*&gt; ys</code></pre>
+<p><a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Control-Applicative.html#v:-60--36--62-"><code>&lt;$&gt;</code></a>는 <a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Functor.html#v:fmap"><code>fmap</code></a>이다.</p>
+<pre class="haskell"><code>fmap :: Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b</code></pre>
+<p><code>Applicative</code>와 <code>Traversable</code>은 <code>Functor</code>여야 한다는 조건이 있어서, 저 <code>f</code>를 <code>Applicative</code>나 <code>Traversable</code>로 봐도 된다.</p>
+<pre class="haskell"><code>fmap :: Applicative f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+fmap :: Traversable f =&gt; (a -&gt; b) -&gt; f a -&gt; f b</code></pre>
+<p>뭐 하는 함수냐면, 간단하게, <code>f a</code>에서 <code>a</code>를 받아 <code>a -&gt; b</code>에 적용시켜서 <code>f b</code>를 내뱉는 말 그대로 <a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-List.html#v:map"><code>map</code></a> 비슷한 함수다. 저 <code>f</code>가 리스트일 경우엔 그냥 <code>map</code>과 같은 함수가 된다. 무튼 그래서:</p>
+<pre class="haskell"><code>cons_f x ys = fmap (:) (f x) &lt;*&gt; ys</code></pre>
+<p>로 다시 쓸 수 있다. 여기서 잘 보면,</p>
+<pre class="haskell"><code>fmap :: Applicative f =&gt; (a -&gt; b) -&gt; f a -&gt; f b</code></pre>
+<p>꼴로 <code>Applicative</code>에 대해 <code>fmap</code>을 적용하고 있다는 걸 알 수 있는데, 이 경우 <code>fmap</code>은 다음과 같게 작동한다:</p>
+<pre class="haskell"><code>fmap f x = pure f &lt;*&gt; x</code></pre>
+<p>즉,</p>
+<pre class="haskell"><code>cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<p>로 다시 쓸 수 있다. <code>&lt;*&gt;</code>는 왼쪽 먼저 계산하기 때문에, 괄호는 필요 없다. <code>f x</code> 동작을 실행해서 나온 값과 <code>ys</code> 동작을 실행해서 나온 값을 <code>(:)</code>에 넣어서 반환하는 동작을 주는 그런 꼴이다. <code>do</code> 블럭을 이용해 다시 쓰면 다음과 같다:</p>
+<pre class="haskell"><code>{-# LANGUAGE ApplicativeDo #-}
+cons_f x ys = do
+    a &lt;- f x
+    b &lt;- ys
+    pure (a : b)</code></pre>
+<hr />
+<pre class="haskell"><code>instance Traversable [] where
+    traverse f = foldr cons_f (pure [])
+      where cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<p>아까 봤을 때, <code>traverse :: (a -&gt; f b) -&gt; t a -&gt; f (t b)</code>로, 인자를 두 개 받는 함수였다.</p>
+<pre class="haskell"><code>instance Traversable [] where
+    traverse :: (Applicative f, Traversable t) =&gt; (a -&gt; f b) -&gt; t a -&gt; f (t b)
+    traverse f arr = foldr cons_f (pure []) arr
+      where cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<p>이렇게 다시 쓸 수 있다. <code>traverse</code>의 <code>t</code>는 당연히 리스트가 되어야 한다.</p>
+<pre class="haskell"><code>instance Traversable [] where
+    traverse :: Applicative f =&gt; (a -&gt; f b) -&gt; [a] -&gt; f [b]
+    traverse f arr = foldr cons_f (pure []) arr
+      where cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<pre class="haskell"><code>foldr :: Foldable t =&gt; (c -&gt; d -&gt; d) -&gt; d -&gt; t c -&gt; d</code></pre>
+<p><a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-List.html#v:foldr"><code>foldr</code></a>는 현재값 <code>c</code>와 나중값 <code>d</code>를 받아 <code>d</code>를 내뱉는 함수 <code>c -&gt; d -&gt; d</code>와, 초기값 <code>d</code>와, <code>c</code>값들이 있는 <code>t c</code>를 받아, <code>d</code>로 접어주는 함수이다. 자주 쓰는 함수이니 순서만 헷갈릴 뿐 개념은 어렵지 않을 거다.</p>
+<p>정리하자면, 이 함수는</p>
+<ol type="1">
+<li>인자로 받은 함수 f를 실행하여</li>
+<li>그 결과값들을 새 리스트에 넣어</li>
+<li><code>Applicative</code>로 감싸 반환하는</li>
+</ol>
+<p>그런 함수 되시겠다.</p>
+<h2 id="문제"><a href="#문제" class="self" aria-label="단락 링크: 문제">§</a>문제</h2>
+<pre class="haskell"><code>traverse (\x -&gt; [0..x]) [0..2]</code></pre>
+<p>문제로 돌아오자. 이곳에서의 <code>Applicative</code>는 아까 봤듯이, <code>[]</code>이다.</p>
+<pre class="haskell"><code>instance Traversable [] where
+    traverse :: (Int -&gt; [Int]) -&gt; [Int] -&gt; [[Int]]
+    traverse f arr = foldr cons_f (pure []) arr
+      where cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<pre class="haskell"><code>foldr :: Foldable t =&gt; (c -&gt; d -&gt; d) -&gt; d -&gt; t c -&gt; d</code></pre>
+<p>였다. 결과값인 <code>d</code>는 <code>[[Int]]</code>가 되어야 하고, <code>pure [] :: t c</code>이므로 <code>t</code>는 <code>[]</code>가 된다.</p>
+<pre class="haskell"><code>foldr :: (c -&gt; [[Int]] -&gt; [[Int]]) -&gt; [[Int]] -&gt; [c] -&gt; [[Int]]</code></pre>
+<p>즉</p>
+<pre class="haskell"><code>cons_f :: c -&gt; [[Int]] -&gt; [[Int]]
+cons_f x ys = pure (:) &lt;*&gt; f x &lt;*&gt; ys</code></pre>
+<p>가 되고, <code>cons_f</code>에 쓰인 <code>Applicative</code>는 리스트였다는 게 밝혀진다. 리스트의 <code>Applicative</code> 구현 기억나는가?</p>
+<pre class="haskell"><code>instance Applicative [] where
+    pure x    = [x]
+    fs &lt;*&gt; xs = [f x | f &lt;- fs, x &lt;- xs]</code></pre>
+<p>풀어보자.</p>
+<pre class="haskell"><code>cons_f x ys = [(:)] &lt;*&gt; f x &lt;*&gt; ys
+
+            = [ g a   | g &lt;- [(:)], a &lt;- f x ] &lt;*&gt; ys
+            = [ (:) a |             a &lt;- f x ] &lt;*&gt; ys
+
+            = [ h y       | h &lt;- [ (:) a | a &lt;- f x ], y &lt;- ys ]
+            = [ ((:) a) y | a &lt;- f x,                  y &lt;- ys ]
+
+            = [ a : y | a &lt;- f x, y &lt;- ys ]</code></pre>
+<p>문제에서 <code>f</code>는 <code>\x -&gt; [0..x]</code>였다.</p>
+<pre class="haskell"><code>cons_f x ys = [ a : y | a &lt;- [0..x], y &lt;- ys ]</code></pre>
+<p>그리고 <code>arr</code>은 <code>[0..2]</code>다.</p>
+<pre class="haskell"><code>traverse _ _ = foldr cons_f (pure []) [0..2]
+    where cons_f x ys = [ a : y | a &lt;- [0..x], y &lt;- ys ]</code></pre>
+<p><code>Applicative</code>가 리스트가 됐으므로, <code>pure []</code>는 <code>[[]]</code>가 된다.</p>
+<pre class="haskell"><code>traverse _ _ = foldr cons_f [[]] [0..2]
+    where cons_f x ys = [ a : y | a &lt;- [0..x], y &lt;- ys ]</code></pre>
+<p>뭐가 어떻게 돌아가는지 보도록 하자. <code>foldr</code>이므로 오른쪽부터 계산해서, 일단 맨 처음엔 <code>x = 2</code>, <code>ys = [[]]</code>가 된다.</p>
+<pre class="haskell"><code>new_ys = [ a : y | a &lt;- [0..2], y &lt;- [[]] ]
+       = [ 0 : [], 1 : [], 2 : [] ]
+       = [ [0], [1], [2] ]</code></pre>
+<p>다음으론 <code>x = 1</code>, <code>ys = [[0],[1],[2]]</code>이 된다.</p>
+<pre class="haskell"><code>new_ys = [ a : y | a &lt;- [0..1], y &lt;- [[0],[1],[2]] ]
+       = [ 0:[0], 0:[1], 0:[2], 1:[0], 1:[1], 1:[2] ]
+       = [ [0,0], [0,1], [0,2], [1,0], [1,1], [1,2] ]</code></pre>
+<p>마지막으로 <code>x = 0</code>, <code>ys = [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]</code>이 된다.</p>
+<pre class="haskell"><code>new_ys = [ a : y | a &lt;- [0..0], y &lt;- [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]  ]
+       = [ 0 : y |              y &lt;- [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]  ]
+       = [ [0,0,0], [0,0,1], [0,0,2], [0,1,0], [0,1,1], [0,1,2] ]</code></pre>
+<p>짜잔.</p></article></main
+><script src='/blog/index.js'></script></body></html>
